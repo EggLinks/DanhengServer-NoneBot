@@ -135,7 +135,137 @@ base_html = """
 </html>
 """
 
-def write_pic(headIcon:int, name: str, signature: str, status: str, subStatus: str, stamina: int, reserve: int, jade: int, credit: int, assistAvatars: list, curLineupAvatars: list, assest_dir: str = ""):
+server_base_html = """
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Status</title>
+    <style>
+        @font-face {
+            font-family: 'SDK_SC_Web';
+            src: url('{{ font_path }}');
+        }
+        body {
+            font-family: SDK_SC_Web;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: transparent;
+        }
+        .main_container {
+            border-radius: 12px;
+            background: rgba(180, 180, 180, 1);
+            padding: 24px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 90%;
+            max-width: 1200px;
+        }
+        .left_container, .right_container {
+            flex: 1;
+            margin: 10px;
+        }
+        .circle {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#76c7c0 {{ percent }}%, #ccc 0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .circle span {
+            position: absolute;
+            font-size: 16px;
+            text-align: center;
+        }
+        .info {
+            font-size: 16px;
+            text-align: center;
+        }
+        .players {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        .player {
+            display: flex;
+            align-items: center;
+            width: calc(60% - 10px);
+            margin-bottom: 10px;
+        }
+        .player img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .player span {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+        }
+        .player .uid {
+            font-size: 12px;
+            color: gray;
+        }
+        .no-players {
+            font-size: 18px;
+            text-align: center;
+            color: #888;
+            margin-top: 20px;
+        }
+        @media (min-width: 768px) {
+            .player {
+                width: calc(33.33% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main_container">
+        <div class="left_container">
+            <div class="circle" style="background: conic-gradient(#76c7c0 {{ memory_percent }}%, #ccc 0);">
+                <span>内存使用: {{ usedMemory }} / {{ maxMemory }} MB<br>程序占用: {{ programUsedMemory }} MB</span>
+            </div>
+            <div class="circle" style="background: conic-gradient(#76c7c0 {{ cpuUsage }}%, #ccc 0);">
+                <span>CPU使用率: {{ cpuUsage }}%<br>核心数: {{ cpuCores }}<br>频率: {{ cpuFrequency }} GHz</span>
+            </div>
+            <div class="info">
+                系统版本: {{ systemVersion }}<br>
+                CPU型号: {{ cpuModel }}
+            </div>
+        </div>
+        <div class="right_container">
+            <h2>在线玩家</h2>
+            {% if onlinePlayers|length == 0 %}
+                <div class="no-players">没有在线玩家</div>
+            {% else %}
+                <div class="players">
+                    {% for player in onlinePlayers %}
+                    <div class="player">
+                        <img src="{{ player.avatar }}" alt="Avatar">
+                        <span>{{ player.name }}<br><span class="uid">UID: {{ player.uid }}</span></span>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+def write_pic(headIcon:int, name: str, signature: str, status: str, subStatus: str, stamina: int, reserve: int, jade: int, credit: int, assistAvatars: list, curLineupAvatars: list, assest_dir: str = "", browser: str = ""):
     template = Template(base_html)
     avatar_json_path = assest_dir + 'cn/avatars.json'
     avatar_json = json.load(open(avatar_json_path, 'r', encoding='utf-8'))
@@ -200,7 +330,31 @@ def write_pic(headIcon:int, name: str, signature: str, status: str, subStatus: s
         team_3=assest_dir + team_3,
         team_4=assest_dir + team_4,
     )
-    hti = Html2Image(browser_executable="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
+    if (browser == ""):
+        hti = Html2Image()
+    else:
+        hti = Html2Image(browser_executable=browser)
     path_list = hti.screenshot(html_str=html_content, size=(490, 635), save_as="tempOutput.png")
+    path = path_list[0]
+    return path
+
+def write_server_pic(data, assest_dir, browser):
+    template = Template(server_base_html)
+    data['font_path'] = assest_dir + 'font/SDK_SC_Web.ttf'
+    data['memory_percent'] = (data['usedMemory'] / data['maxMemory']) * 100
+    avatar_json_path = assest_dir + 'cn/avatars.json'
+    avatar_json = json.load(open(avatar_json_path, 'r', encoding='utf-8'))
+    for player in data['onlinePlayers']:
+        player['avatar'] = assest_dir + avatar_json[str(player['headIconId'])]['icon']
+    html_content = template.render(data)
+    base_height = 500  # base height for the template without players
+    player_height = 50  # height for each player entry
+    total_height = base_height + max(0, player_height * (len(data['onlinePlayers']) - 7))
+    
+    if (browser == ""):
+        hti = Html2Image()
+    else:
+        hti = Html2Image(browser_executable=browser)
+    path_list = hti.screenshot(html_str=html_content, size=(520, total_height), save_as="tempOutput.png")
     path = path_list[0]
     return path

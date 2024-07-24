@@ -11,9 +11,9 @@ import base64
 class Tools:
     base_url = 'https://localhost'
     exec_url = base_url + '/muip/exec_cmd'  # GET POST
-    auth_url = base_url + '/muip/auth_admin'  # GET POST
-    server_info_url = base_url + '/muip/server_information'  # GET
-    player_info_url = base_url + '/muip/player_information'  # GET
+    auth_url = base_url + '/muip/auth_admin'  # POST
+    server_info_url = base_url + '/muip/server_information'  # GET POST
+    player_info_url = base_url + '/muip/player_information'  # GET POST
 
     memory_session_id = ''
     memory_expire_time = ''
@@ -93,7 +93,7 @@ class Tools:
             send_data = {
                 'sessionId': self.memory_session_id
             }
-            data = json.loads(self.send_get_request(self.server_info_url, send_data))
+            data = json.loads(self.send_post_request(self.server_info_url, send_data))
             return data
         except Exception as e:
             return '出现错误: ' + str(e) + '\n堆栈：' + str(traceback.format_exc())
@@ -112,7 +112,7 @@ class Tools:
                 'sessionId': self.memory_session_id,
                 'uid': uid
             }
-            data = json.loads(self.send_get_request(self.player_info_url, send_data))
+            data = json.loads(self.send_post_request(self.player_info_url, send_data))
             return data
         except Exception as e:
             return '出现错误: ' + str(e) + '\n堆栈：' + str(traceback.format_exc())

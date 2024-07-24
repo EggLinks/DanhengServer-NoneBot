@@ -62,7 +62,7 @@ async def player_handle(bot,
     player_result = tools.player_info(target, plugin_config.danheng_admin_key)
     if player_result['code'] != 0:
         await player.finish(player_result['message'])
-    path = write_pic(player_result['data']['headIconId'], player_result['data']['name'], player_result['data']['signature'], player_result['data']['playerStatus'], player_result['data']['playerSubStatus'], player_result['data']['stamina'], player_result['data']['recoveryStamina'], player_result['data']['jade'], player_result['data']['credit'], player_result['data']['assistAvatarList'], player_result['data']['lineupBaseAvatarIdList'], plugin_config.danheng_assest_dir)
+    path = write_pic(player_result['data']['headIconId'], player_result['data']['name'], player_result['data']['signature'], player_result['data']['playerStatus'], player_result['data']['playerSubStatus'], player_result['data']['stamina'], player_result['data']['recoveryStamina'], player_result['data']['jade'], player_result['data']['credit'], player_result['data']['assistAvatarList'], player_result['data']['lineupBaseAvatarIdList'], plugin_config.danheng_assest_dir, plugin_config.danheng_browser)
     dict = [{
         "type": "image",
         "path": path
@@ -77,11 +77,11 @@ async def info_handle(bot,
                       args: Message=CommandArg(),
                       command=CommandStart()):
     info_result = tools.info(plugin_config.danheng_admin_key)
-    result = "服务器内存：%d MB / %d MB (服务端占用 %d MB)\n在线人数：%d (" % (info_result['data']['usedMemory'], 
-                                                             info_result['data']['maxMemory'], 
-                                                             info_result['data']['programUsedMemory'], 
-                                                             len(info_result['data']['onlinePlayers']))
-    for i in info_result['data']['onlinePlayers']:
-        result += str(i['uid']) + ', '
-    result = result[:-2] + ')'
+    
+    path = write_server_pic(info_result['data'], plugin_config.danheng_assest_dir, plugin_config.danheng_browser)
+    dict = [{
+        "type": "image",
+        "path": path
+    }]
+    result = process_message(dict)
     await info.finish(result)

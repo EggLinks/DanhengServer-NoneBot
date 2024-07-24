@@ -6,3 +6,4 @@ class Config(BaseModel):
     # The server admin_key
     danheng_admin_key: str = ""
     danheng_assest_dir: str = ""
+    danheng_browser: str = ""
