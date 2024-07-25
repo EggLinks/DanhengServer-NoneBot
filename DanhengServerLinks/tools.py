@@ -11,6 +11,7 @@ import base64
 class Tools:
     base_url = 'https://localhost'
     exec_url = base_url + '/muip/exec_cmd'  # GET POST
+    create_session_url = base_url + '/muip/create_session'  # POST
     auth_url = base_url + '/muip/auth_admin'  # POST
     server_info_url = base_url + '/muip/server_information'  # GET POST
     player_info_url = base_url + '/muip/player_information'  # GET POST
@@ -22,6 +23,7 @@ class Tools:
     def __init__(self, baseUrl: str):
         self.base_url = baseUrl
         self.exec_url = baseUrl + '/muip/exec_cmd'
+        self.create_session_url = baseUrl + '/muip/create_session'
         self.auth_url = baseUrl + '/muip/auth_admin'
         self.server_info_url = baseUrl + '/muip/server_information'
         self.player_info_url = baseUrl + '/muip/player_information'
@@ -49,13 +51,18 @@ class Tools:
 
 
     def login(self, token: str) -> str:
-        send_data = {'admin_key': token, 'key_type': 'PEM'}
+        send_session_data = {'key_type': 'PEM'}
+        session_data = json.loads(self.send_post_request(self.create_session_url, send_session_data))
+        if session_data['code'] != 0:
+            return session_data['message']
+        self.memory_session_id = session_data['data']['sessionId']
+        self.memory_expire_time = session_data['data']['expireTimeStamp']
+        self.memory_rsa_public_key = session_data['data']['rsaPublicKey']
+
+        send_data = {'admin_key': self.rsa_encrypt(token, self.memory_rsa_public_key), 'session_id': self.memory_session_id}
         data = json.loads(self.send_post_request(self.auth_url, send_data))
         if data['code'] != 0:
             return data['message']
-        self.memory_session_id = data['data']['sessionId']
-        self.memory_expire_time = data['data']['expireTimeStamp']
-        self.memory_rsa_public_key = data['data']['rsaPublicKey']
         return data['message']
 
     def exec(self, cmd: str, target: int, token: str) -> str:
